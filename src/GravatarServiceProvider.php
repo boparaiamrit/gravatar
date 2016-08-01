@@ -1,4 +1,4 @@
-<?php namespace Boparaiamrit\Gravatar;
+<?php namespace Boparaiamrit\GravatarProfile;
 
 
 use Illuminate\Support\ServiceProvider;
