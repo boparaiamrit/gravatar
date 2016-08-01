@@ -1,0 +1,21 @@
+{
+  "name": "boparaiamrit/gravatar-profile",
+  "description": "To fetch user profile from gravatar",
+  "require": {
+    "laravel/framework": "5.2.*",
+    "guzzlehttp/guzzle": "6.*"
+  },
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Amritpal Singh",
+      "email": "boparaiamrit@gmail.com"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "Boparaiamrit\\Gravatar\\": "src"
+    }
+  },
+  "minimum-stability": "stable"
+}
