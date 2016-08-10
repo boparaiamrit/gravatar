@@ -18,6 +18,13 @@ class GravatarClient
 {
 	protected $Client;
 	
+	protected $email;
+	protected $profile;
+	
+	protected $domainMapper = [
+		'twitter' => 'twitter.com'
+	];
+	
 	function __construct(Config $Config, Bugsnag $Bugsnag)
 	{
 		$baseUri = $Config->get('gravatar-profile.base_uri');
@@ -25,34 +32,107 @@ class GravatarClient
 		$this->Client = new Client(['base_uri' => $baseUri]);
 	}
 	
-	private function checkEmail($email)
+	private function checkEmail()
 	{
-		if (!filter_var($email, FILTER_VALIDATE_EMAIL))
+		if (!filter_var($this->email, FILTER_VALIDATE_EMAIL))
 			throw new InvalidEmailException ('Please specify a valid email address');
 	}
 	
-	private function hashEmail($email)
+	private function hashEmail()
 	{
-		return md5(strtolower(trim($email)));
+		$this->email = md5(strtolower(trim($this->email)));
 	}
 	
-	private function buildRoute($email)
+	private function buildRoute()
 	{
-		return $email . '.json';
+		return $this->email . '.json';
 	}
 	
-	public function getUserProfile($email)
+	public function fetchProfile()
 	{
-		$this->checkEmail($email);
+		$this->checkEmail();
+		$this->hashEmail();
 		
-		$email = $this->hashEmail($email);
-		$route = $this->buildRoute($email);
+		$route = $this->buildRoute();
 		
 		$response = $this->Client->get($route);
-		$content  = $response->getBody()->getContents();
 		
-		$data = \GuzzleHttp\json_decode($content, true);
+		$content = $response->getBody()->getContents();
 		
-		return array_get($data, 'entry.0');
+		$content = \GuzzleHttp\json_decode($content, true);
+		
+		$this->profile = array_get($content, 'entry.0', []);
+		
+		return $this->profile;
+	}
+	
+	
+	public function getProfile()
+	{
+		if (empty($this->profile)) {
+			return $this->fetchProfile();
+		}
+		
+		return $this->profile;
+	}
+	
+	public function resetProfile()
+	{
+		$this->profile = null;
+		
+		return true;
+	}
+	
+	public function getUsername()
+	{
+		return array_get($this->getProfile(), 'preferredUsername');
+	}
+	
+	public function getThumbnail()
+	{
+		return array_get($this->getProfile(), 'thumbnailUrl');
+	}
+	
+	private function getAccounts()
+	{
+		return array_get($this->getProfile(), 'accounts', []);
+	}
+	
+	public function getDomain($social)
+	{
+		return array_get($this->domainMapper, $social);
+	}
+	
+	public function getSocialAccount($social = null)
+	{
+		$accounts = $this->getAccounts();
+		$domain   = $this->getDomain($social);
+		
+		$socialAccount = [];
+		foreach ($accounts as $account) {
+			if (array_has($account, 'domain') and array_get($account, 'domain') == $domain) {
+				$socialAccount = $account;
+				break;
+			}
+		}
+		
+		return $socialAccount;
+	}
+	
+	/**
+	 * @return mixed
+	 */
+	public function getEmail()
+	{
+		return $this->email;
+	}
+	
+	/**
+	 * @param mixed $email
+	 */
+	public function setEmail($email)
+	{
+		$this->email = $email;
+		$this->resetProfile();
 	}
 }
